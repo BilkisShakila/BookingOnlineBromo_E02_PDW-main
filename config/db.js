@@ -1,56 +1,51 @@
 const mysql = require('mysql2/promise');
 require('dotenv').config();
 
-// Konfigurasi dasar database yang dinamis membaca .env
+// Konfigurasi dasar database dinamis membaca .env
 const dbConfig = {
   host: process.env.DB_HOST || 'localhost',
   user: process.env.DB_USER || 'root',
   password: process.env.DB_PASS || '',
   port: parseInt(process.env.DB_PORT) || 3306,
-  // Konfigurasi SSL yang lebih aman dan ketat untuk TiDB Cloud
+  // Mengamankan jalur transpor data ke TiDB Cloud dengan enkripsi TLS/SSL ketat
   ssl: process.env.DB_SSL === 'true' ? {
     minVersion: 'TLSv1.2',
     rejectUnauthorized: true
   } : false
 };
 
-let pool;
+// Inisialisasi pool koneksi
+const pool = mysql.createPool({
+  ...dbConfig,
+  database: process.env.DB_NAME || 'booking_bromo',
+  waitForConnections: true,
+  connectionLimit: 5,       // Batasi limit koneksi di lingkungan serverless agar efisien
+  queueLimit: 0,
+  connectTimeout: 15000     // Menaikkan batas batas tunggu (15 detik) untuk mencegah ETIMEDOUT
+});
 
+// Fungsi inisialisasi yang disederhanakan untuk kestabilan production di Vercel
 async function initDB() {
   try {
-    // 1. Pembuatan database otomatis hanya dilakukan di lokal (development)
-    // Di TiDB Cloud, database harus sudah dibuat dulu lewat dashboard atau gunakan database 'test'
-    if (process.env.NODE_ENV !== 'production' && process.env.DB_HOST === 'localhost') {
-      const connection = await mysql.createConnection(dbConfig);
-      await connection.query(`CREATE DATABASE IF NOT EXISTS \`${process.env.DB_NAME || 'booking_bromo'}\``);
-      await connection.end();
-    }
-
-    // 2. Buat pool koneksi ke database target
-    pool = mysql.createPool({
-      ...dbConfig,
-      database: process.env.DB_NAME || 'booking_bromo',
-      waitForConnections: true,
-      connectionLimit: 10,
-      queueLimit: 0
-    });
-
-    console.log(`Terhubung ke database: ${process.env.DB_NAME || 'booking_bromo'}`);
-
-    // 3. Buat tabel-tabel jika belum ada
-    await createTables();
+    // Lakukan cek ping koneksi singkat untuk memastikan kredensial .env valid
+    const connection = await pool.getConnection();
+    console.log(`Berhasil terhubung ke database TiDB: ${process.env.DB_NAME || 'booking_bromo'}`);
     
-    // 4. Masukkan data default (seeding)
-    await seedData();
-
+    // Jika berjalan di lokal (development), jalankan fungsi pembantu opsional jika diperlukan
+    if (process.env.NODE_ENV !== 'production' && process.env.DB_HOST === 'localhost') {
+      await createTables();
+      await seedData();
+    }
+    
+    connection.release(); // Kembalikan slot koneksi ke dalam pool
   } catch (error) {
-    console.error('Gagal menginisialisasi database:', error);
-    process.exit(1);
+    console.error('Gagal mengoneksikan database:', error);
+    // Jangan gunakan process.exit(1) di serverless agar runtime container tidak mati total
   }
 }
 
+// Fungsi pembantu pembuatan tabel otomatis (hanya aktif di lingkungan lokal jika diizinkan)
 async function createTables() {
-  // Catatan: ENGINE=InnoDB dihapus agar kompatibel murni dengan TiDB Cloud
   const usersTable = `
     CREATE TABLE IF NOT EXISTS users (
       id INT AUTO_INCREMENT PRIMARY KEY,
@@ -108,13 +103,11 @@ async function createTables() {
   await pool.query(packagesTable);
   await pool.query(bookingsTable);
   await pool.query(paymentsTable);
-  console.log('Tabel-tabel database berhasil diverifikasi/dibuat.');
 }
 
+// Fungsi pembantu penyuntikan data awal (hanya aktif di lingkungan lokal)
 async function seedData() {
   const bcrypt = require('bcryptjs');
-
-  // Check if admin exists
   const [admins] = await pool.query("SELECT * FROM users WHERE role = 'admin'");
   if (admins.length === 0) {
     const hashedPassword = await bcrypt.hash('admin', 10);
@@ -122,46 +115,6 @@ async function seedData() {
       "INSERT INTO users (username, email, password, phone, role) VALUES (?, ?, ?, ?, 'admin')",
       ['admin', 'admin@bromo.com', hashedPassword, '081234567890']
     );
-    console.log('User Admin default berhasil dibuat (username: admin, pass: admin)');
-  }
-
-  // Check if packages exist
-  const [packages] = await pool.query("SELECT * FROM packages");
-  if (packages.length === 0) {
-    const defaultPackages = [
-      [
-        'Paket Bromo Sunrise (Open Trip)',
-        'Saksikan keindahan matahari terbit Bromo yang legendaris di Penanjakan 1, dilanjutkan menjelajahi Kawah Bromo, Pasir Berbisik, Savana, dan Bukit Teletubbies menggunakan Jeep 4x4. Paket sudah termasuk penjemputan dari Malang/Surabaya, driver, BBM, tiket masuk TNBTS, dan air mineral.',
-        350000.00,
-        '/images/packages/bromo_sunrise.jpg'
-      ],
-      [
-        'Paket Bromo Milky Way & Sunrise (Private)',
-        'Bagi pecinta fotografi malam, nikmati pemandangan galaksi Bintang Bromo (Milky Way) yang spektakuler dari spot terbaik di malam hari sebelum menyaksikan Sunrise yang memukau. Paket eksklusif private jeep dengan fotografer berpengalaman.',
-        750000.00,
-        '/images/packages/bromo_milkyway.jpg'
-      ],
-      [
-        'Paket Bromo Camping & Adventure',
-        'Rasakan sensasi berkemah di bawah jutaan bintang di kawasan kaldera Bromo. Termasuk perlengkapan tenda premium, api unggun, makan malam hangat khas pegunungan, pemandu lokal, dan jelajah kawah serta bukit Teletubbies keesokan harinya.',
-        950000.00,
-        '/images/packages/bromo_camping.jpg'
-      ],
-      [
-        'Sewa Jeep Bromo (Private 4x4 Jeep)',
-        'Sewa Jeep Toyota Land Cruiser 4x4 pribadi untuk rombongan Anda sendiri. Rute mencakup: Penanjakan/Kedaluh (Sunrise), Kawah Bromo (Pura Luhur Poten), Pasir Berbisik, dan Bukit Teletubbies. Maksimal 6 orang per jeep. Penjemputan di area Cemoro Lawang / Tosari / Wonokitri.',
-        650000.00,
-        '/images/packages/sewa_jeep.jpg'
-      ]
-    ];
-
-    for (const pkg of defaultPackages) {
-      await pool.query(
-        "INSERT INTO packages (name, description, price_per_person, image_url) VALUES (?, ?, ?, ?)",
-        pkg
-      );
-    }
-    console.log('Data Paket Wisata default berhasil ditambahkan.');
   }
 }
 
