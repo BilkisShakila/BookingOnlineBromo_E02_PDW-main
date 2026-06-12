@@ -1,22 +1,31 @@
 const mysql = require('mysql2/promise');
 require('dotenv').config();
 
+// Konfigurasi dasar database yang dinamis membaca .env
 const dbConfig = {
   host: process.env.DB_HOST || 'localhost',
   user: process.env.DB_USER || 'root',
   password: process.env.DB_PASS || '',
+  port: parseInt(process.env.DB_PORT) || 3306, // Sangat penting: TiDB menggunakan port 4000
+  // --- KUNCI UTAMA UNTUK KONEKSI CLOUD (SSL) ---
+  ssl: process.env.DB_SSL === 'true' ? {
+    rejectUnauthorized: true
+  } : false
 };
 
 let pool;
 
 async function initDB() {
   try {
-    // 1. Koneksi awal ke MySQL Server untuk memastikan DB ada
-    const connection = await mysql.createConnection(dbConfig);
-    await connection.query(`CREATE DATABASE IF NOT EXISTS \`${process.env.DB_NAME || 'booking_bromo'}\``);
-    await connection.end();
+    // 1. Pembuatan database otomatis hanya dilakukan di lokal (development)
+    // Di TiDB Cloud, database harus sudah dibuat dulu lewat dashboard atau gunakan database 'test'
+    if (process.env.NODE_ENV !== 'production' && process.env.DB_HOST === 'localhost') {
+      const connection = await mysql.createConnection(dbConfig);
+      await connection.query(`CREATE DATABASE IF NOT EXISTS \`${process.env.DB_NAME || 'booking_bromo'}\``);
+      await connection.end();
+    }
 
-    // 2. Buat pool koneksi ke database yang ditargetkan
+    // 2. Buat pool koneksi ke database target
     pool = mysql.createPool({
       ...dbConfig,
       database: process.env.DB_NAME || 'booking_bromo',
@@ -25,7 +34,7 @@ async function initDB() {
       queueLimit: 0
     });
 
-    console.log(`Terhubung ke database MySQL: ${process.env.DB_NAME || 'booking_bromo'}`);
+    console.log(`Terhubung ke database: ${process.env.DB_NAME || 'booking_bromo'}`);
 
     // 3. Buat tabel-tabel jika belum ada
     await createTables();
@@ -40,6 +49,7 @@ async function initDB() {
 }
 
 async function createTables() {
+  // Catatan: ENGINE=InnoDB dihapus agar kompatibel murni dengan TiDB Cloud
   const usersTable = `
     CREATE TABLE IF NOT EXISTS users (
       id INT AUTO_INCREMENT PRIMARY KEY,
@@ -49,7 +59,7 @@ async function createTables() {
       phone VARCHAR(20) NOT NULL,
       role ENUM('admin', 'customer') NOT NULL DEFAULT 'customer',
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    ) ENGINE=InnoDB;
+    );
   `;
 
   const packagesTable = `
@@ -60,7 +70,7 @@ async function createTables() {
       price_per_person DECIMAL(10, 2) NOT NULL,
       image_url VARCHAR(255) NOT NULL,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    ) ENGINE=InnoDB;
+    );
   `;
 
   const bookingsTable = `
@@ -76,7 +86,7 @@ async function createTables() {
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
       FOREIGN KEY (package_id) REFERENCES packages(id) ON DELETE CASCADE
-    ) ENGINE=InnoDB;
+    );
   `;
 
   const paymentsTable = `
@@ -90,7 +100,7 @@ async function createTables() {
       status ENUM('pending', 'verified', 'failed') NOT NULL DEFAULT 'pending',
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (booking_id) REFERENCES bookings(id) ON DELETE CASCADE
-    ) ENGINE=InnoDB;
+    );
   `;
 
   await pool.query(usersTable);
