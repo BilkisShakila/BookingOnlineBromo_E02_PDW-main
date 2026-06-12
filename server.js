@@ -1,5 +1,6 @@
 const express = require('express');
 const session = require('express-session');
+const MySQLStore = require('express-mysql-session')(session); // 🛠️ TAMBAHAN: Adapter session untuk database
 const path = require('path');
 const dotenv = require('dotenv');
 const fs = require('fs');
@@ -18,6 +19,11 @@ const PackageController = require('./controllers/PackageController');
 
 const app = express();
 
+// --- MODIFIKASI VERCEL: Percayai proxy routing HTTPS Vercel ---
+if (process.env.NODE_ENV === 'production') {
+  app.set('trust proxy', 1); // 🛠️ Wajib disetel ke 1 agar cookie secure dapat dikirim lewat Vercel proxy
+}
+
 // --- MODIFIKASI VERCEL: Hindari crash fs di environment serverless ---
 const uploadDir = path.join(__dirname, 'public/uploads');
 if (process.env.NODE_ENV !== 'production') {
@@ -26,7 +32,7 @@ if (process.env.NODE_ENV !== 'production') {
   }
 }
 
-// Inisialisasi Database MySQL (Pastikan variabel di .env sudah mengarah ke cloud db saat production)
+// Inisialisasi Database MySQL
 db.initDB();
 
 // Pengaturan Template Engine EJS
@@ -41,13 +47,24 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 app.use('/uploads', express.static(path.join(__dirname, 'public/uploads')));
 
-// Konfigurasi Session
+// --- MODIFIKASI KONEKSI SESSION KE DATABASES ---
+// Kita gunakan instance pool yang sama dari config/db agar hemat slot koneksi TiDB
+const sessionStore = new MySQLStore({
+  clearExpired: true,
+  checkExpirationInterval: 900000, // Bersihkan sesi kedaluwarsa otomatis setiap 15 menit
+}, db.pool); 
+
+// Konfigurasi Session yang Dioptimalkan untuk Vercel & TiDB
 app.use(session({
+  key: 'booking_bromo_session',
   secret: process.env.SESSION_SECRET || 'secret_key_bromo_123',
+  store: sessionStore, // 🛠️ Sesi dialihkan dari memori RAM serverless ke TiDB Cloud
   resave: false,
   saveUninitialized: false,
   cookie: {
-    maxAge: 24 * 60 * 60 * 1000 // Sesi bertahan 1 Hari
+    maxAge: 24 * 60 * 60 * 1000, // Sesi bertahan 1 Hari
+    secure: process.env.NODE_ENV === 'production', // 🛠️ Wajib TRUE di production agar aman lewat HTTPS Vercel
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax' // 🛠️ Menghindari masalah cookie hilang saat redirect lintas domain di serverless
   }
 }));
 
