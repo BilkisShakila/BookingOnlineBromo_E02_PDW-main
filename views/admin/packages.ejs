@@ -1,0 +1,180 @@
+<%- include('../partials/header') %>
+
+<div class="admin-container">
+  <!-- Sidebar Admin -->
+  <aside class="admin-sidebar">
+    <div class="sidebar-header">
+      <i class="fa-solid fa-user-shield"></i>
+      <h3>Admin Panel</h3>
+    </div>
+    <ul class="sidebar-links">
+      <li>
+        <a href="/admin"><i class="fa-solid fa-table-columns"></i> Transaksi Pemesanan</a>
+      </li>
+      <li>
+        <a href="/admin/packages" class="active"><i class="fa-solid fa-folder-open"></i> Kelola Paket Tour</a>
+      </li>
+    </ul>
+  </aside>
+
+  <!-- Konten Utama Admin -->
+  <main class="admin-main">
+    <div class="admin-header-title">
+      <h1>Kelola Paket Wisata Bromo</h1>
+      <p>Tambahkan, ubah, atau hapus katalog paket wisata Bromo yang ditawarkan kepada pelanggan.</p>
+    </div>
+
+    <% if (success) { %>
+      <div class="alert alert-success">
+        <i class="fa-solid fa-circle-check"></i>
+        <span><%= success %></span>
+      </div>
+    <% } %>
+
+    <% if (error) { %>
+      <div class="alert alert-danger">
+        <i class="fa-solid fa-triangle-exclamation"></i>
+        <span><%= error %></span>
+      </div>
+    <% } %>
+
+    <div class="packages-crud-grid">
+      <!-- Sisi Kiri: Form Tambah / Edit (Dinamis) -->
+      <div class="crud-form-card">
+        <h3 id="formTitle"><i class="fa-solid fa-plus-circle"></i> Tambah Paket Wisata</h3>
+        <p class="form-desc text-muted">Isi formulir untuk menambahkan paket baru atau mengubah paket yang dipilih.</p>
+        
+        <form action="/admin/packages/create" method="POST" enctype="multipart/form-data" id="packageForm" class="crud-form">
+          <div class="form-group">
+            <label for="name">Nama Paket Wisata</label>
+            <input type="text" id="name" name="name" placeholder="Contoh: Paket Bromo Sunrise Premium" required>
+          </div>
+
+          <div class="form-group">
+            <label for="price_per_person">Tarif per Orang (Rp)</label>
+            <input type="number" id="price_per_person" name="price_per_person" placeholder="Contoh: 350000" min="0" required>
+          </div>
+
+          <div class="form-group">
+            <label for="description">Deskripsi Lengkap Paket</label>
+            <textarea id="description" name="description" rows="6" placeholder="Tuliskan detail rute, fasilitas, dan jadwal tour di sini..." required></textarea>
+          </div>
+
+          <div class="form-group">
+            <label for="image" id="imageLabel">Gambar Paket Wisata</label>
+            <input type="file" id="image" name="image" accept="image/*" required>
+            <small class="form-help" id="imageHelp">Pilihlah file gambar promosi paket (JPG, JPEG, PNG, WEBP). Maks 5MB.</small>
+          </div>
+
+          <div class="form-actions-crud">
+            <button type="button" id="btnCancelEdit" class="btn btn-outline" style="display:none;"><i class="fa-solid fa-xmark"></i> Batal Edit</button>
+            <button type="submit" id="btnSubmitForm" class="btn btn-primary"><i class="fa-solid fa-save"></i> Simpan Paket</button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Sisi Kanan: Daftar Paket -->
+      <div class="crud-list-card">
+        <h3><i class="fa-solid fa-list"></i> Daftar Paket Saat Ini</h3>
+        <div class="table-responsive mt-3">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>Gambar</th>
+                <th>Nama Paket</th>
+                <th>Harga / Pax</th>
+                <th>Deskripsi</th>
+                <th>Aksi</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% if (packages && packages.length > 0) { %>
+                <% packages.forEach(function(pkg) { %>
+                  <tr>
+                    <td>
+                      <img src="<%= pkg.image_url %>" alt="<%= pkg.name %>" class="table-pkg-img" onerror="this.src='https://via.placeholder.com/150';">
+                    </td>
+                    <td><strong><%= pkg.name %></strong></td>
+                    <td>Rp <%= parseFloat(pkg.price_per_person).toLocaleString('id-ID') %></td>
+                    <td><small><%= pkg.description.substring(0, 75) %>...</small></td>
+                    <td>
+                      <div class="admin-actions-vertical">
+                        <button class="btn btn-outline-primary btn-xs btn-edit-pkg" 
+                                data-id="<%= pkg.id %>" 
+                                data-name="<%= pkg.name %>" 
+                                data-price="<%= pkg.price_per_person %>" 
+                                data-desc="<%= pkg.description %>">
+                          <i class="fa-solid fa-edit"></i> Edit
+                        </button>
+                        <form action="/admin/packages/delete/<%= pkg.id %>" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin menghapus paket ini? Gambar paket juga akan dihapus.');" style="display:inline;">
+                          <button type="submit" class="btn btn-danger btn-xs"><i class="fa-solid fa-trash"></i> Hapus</button>
+                        </form>
+                      </div>
+                    </td>
+                  </tr>
+                <% }); %>
+              <% } else { %>
+                <tr>
+                  <td colspan="5" class="text-center py-4">Belum ada paket wisata yang terdaftar.</td>
+                </tr>
+              <% } %>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+  // Script untuk mengubah form Tambah menjadi form Edit secara dinamis
+  const form = document.getElementById('packageForm');
+  const formTitle = document.getElementById('formTitle');
+  const btnCancelEdit = document.getElementById('btnCancelEdit');
+  const btnSubmitForm = document.getElementById('btnSubmitForm');
+  const inputImage = document.getElementById('image');
+  const imageHelp = document.getElementById('imageHelp');
+  
+  const editButtons = document.querySelectorAll('.btn-edit-pkg');
+
+  editButtons.forEach(btn => {
+    btn.addEventListener('click', function() {
+      const id = this.getAttribute('data-id');
+      const name = this.getAttribute('data-name');
+      const price = this.getAttribute('data-price');
+      const desc = this.getAttribute('data-desc');
+
+      // Isi value form
+      document.getElementById('name').value = name;
+      document.getElementById('price_per_person').value = price;
+      document.getElementById('description').value = desc;
+
+      // Ubah target action form & judul
+      form.action = `/admin/packages/update/${id}`;
+      formTitle.innerHTML = `<i class="fa-solid fa-edit"></i> Edit Paket Wisata (ID: #${id})`;
+      
+      // Pada saat edit, gambar tidak wajib diganti (opsional)
+      inputImage.required = false;
+      imageHelp.textContent = "Kosongkan jika tidak ingin mengubah gambar paket.";
+
+      // Tampilkan tombol Batal
+      btnCancelEdit.style.display = 'inline-block';
+      btnSubmitForm.innerHTML = `<i class="fa-solid fa-save"></i> Perbarui Paket`;
+    });
+  });
+
+  // Event handler untuk membatalkan proses edit
+  btnCancelEdit.addEventListener('click', function() {
+    form.reset();
+    form.action = '/admin/packages/create';
+    formTitle.innerHTML = `<i class="fa-solid fa-plus-circle"></i> Tambah Paket Wisata`;
+    
+    inputImage.required = true;
+    imageHelp.textContent = "Pilihlah file gambar promosi paket (JPG, JPEG, PNG, WEBP). Maks 5MB.";
+
+    btnCancelEdit.style.display = 'none';
+    btnSubmitForm.innerHTML = `<i class="fa-solid fa-save"></i> Simpan Paket`;
+  });
+</script>
+
+<%- include('../partials/footer') %>

@@ -1,0 +1,26 @@
+@startuml
+package "Client Side (Web Browser)" {
+  [User Interface (HTML/CSS)] as UI
+  [Fetch API / Form Submission] as Fetch
+}
+
+package "Server Side (Node.js & Express)" {
+  [Express Router] as Router
+  [Auth Middleware & Multer] as Middleware
+  [Controllers] as Controllers
+  [EJS Views Engine] as EJS
+}
+
+package "Data & Storage Layer" {
+  database "MySQL DB (XAMPP)" as MySQL
+  folder "/public/uploads/" as Storage
+}
+
+UI --> Router : HTTP Request
+Router --> Middleware : Route Request
+Middleware --> Controllers : Pass Request
+Controllers --> EJS : Render View
+EJS --> UI : HTML Response
+Controllers --> MySQL : SQL Query
+Controllers --> Storage : Save Files
+@enduml

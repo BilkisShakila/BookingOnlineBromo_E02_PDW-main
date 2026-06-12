@@ -1,0 +1,125 @@
+<%- include('partials/header') %>
+
+<!-- Hero Section -->
+<section class="hero-section">
+  <div class="hero-overlay"></div>
+  <div class="hero-content">
+    <span class="hero-badge"><i class="fa-solid fa-mountain"></i> Wisata Alam Populer Jawa Timur</span>
+    <h1>Jelajahi Keindahan Legendaris Gunung Bromo</h1>
+    <p>Pesan tiket masuk TNBTS, sewa Jeep 4x4, atau pilih paket tour lengkap Bromo secara online dengan aman, cepat, dan mudah.</p>
+    <a href="#katalog" class="btn btn-primary btn-lg"><i class="fa-solid fa-calendar-days"></i> Pesan Sekarang</a>
+  </div>
+</section>
+
+<!-- Features Section -->
+<section class="features-section">
+  <div class="section-container">
+    <div class="section-header">
+      <h2>Mengapa Memilih Kami?</h2>
+      <p>Kami memberikan layanan pemesanan tiket dan tour Bromo dengan kualitas terbaik untuk perjalanan Anda.</p>
+    </div>
+    <div class="features-grid">
+      <div class="feature-card">
+        <div class="feature-icon"><i class="fa-solid fa-bolt"></i></div>
+        <h3>Konfirmasi Instan</h3>
+        <p>Pemesanan Anda diproses langsung oleh sistem dan status divalidasi dengan cepat oleh administrator.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon"><i class="fa-solid fa-shield-halved"></i></div>
+        <h3>Pembayaran Aman</h3>
+        <p>Transaksi transfer bank terverifikasi resmi secara manual oleh admin kami untuk jaminan keamanan.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon"><i class="fa-solid fa-compass"></i></div>
+        <h3>Rute Jeep Terlengkap</h3>
+        <p>Armada Jeep Toyota Land Cruiser 4x4 prima siap mengantar Anda ke seluruh spot destinasi Bromo.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon"><i class="fa-solid fa-headset"></i></div>
+        <h3>Layanan Bantuan 24/7</h3>
+        <p>Tim support lokal kami siap melayani dan mendampingi petualangan Anda kapan saja.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Catalog Section -->
+<section id="katalog" class="catalog-section">
+  <div class="section-container">
+    <div class="section-header">
+      <h2>Pilihan Paket Wisata Bromo</h2>
+      <p>Temukan paket petualangan terbaik Anda di kaldera Gunung Bromo dengan harga terjangkau.</p>
+    </div>
+
+    <div class="packages-grid">
+      <% if (packages && packages.length > 0) { %>
+        <% packages.forEach(function(pkg) { %>
+          <div class="package-card">
+            <div class="package-img-container" style="background-image: url('<%= pkg.image_url %>');">
+              <img src="<%= pkg.image_url %>" alt="<%= pkg.name %>" class="package-img">
+              <span class="package-tag">Populer</span>
+            </div>
+            <div class="package-info">
+              <h3><%= pkg.name %></h3>
+              <p class="package-desc"><%= pkg.description.substring(0, 110) %>...</p>
+              <div class="package-meta">
+                <span class="package-price">Rp <%= parseFloat(pkg.price_per_person).toLocaleString('id-ID') %> <small>/ orang</small></span>
+              </div>
+              <div class="package-actions">
+                <a href="/packages/<%= pkg.id %>" class="btn btn-outline-primary btn-block"><i class="fa-solid fa-circle-info"></i> Detail Paket</a>
+                <a href="/booking/new?packageId=<%= pkg.id %>" class="btn btn-primary btn-block"><i class="fa-solid fa-cart-shopping"></i> Pesan Sekarang</a>
+              </div>
+            </div>
+          </div>
+        <% }); %>
+      <% } else { %>
+        <div class="no-packages">
+          <i class="fa-solid fa-calendar-xmark"></i>
+          <p>Belum ada paket wisata tersedia saat ini.</p>
+        </div>
+      <% } %>
+    </div>
+  </div>
+</section>
+
+<!-- Destination Highlights Section -->
+<section class="highlights-section">
+  <div class="section-container">
+    <div class="section-header">
+      <h2>Jelajahi Spot Utama Bromo</h2>
+      <p>Berikut adalah 4 destinasi ikonik Bromo yang akan Anda kunjungi bersama paket tour kami.</p>
+    </div>
+    <div class="highlights-grid">
+      <div class="highlight-item">
+        <div class="highlight-overlay"></div>
+        <div class="highlight-info">
+          <h3>Penanjakan 1</h3>
+          <p>Titik tertinggi untuk menyaksikan keindahan matahari terbit (sunrise) berlatar belakang Gunung Bromo, Batok, dan Semeru.</p>
+        </div>
+      </div>
+      <div class="highlight-item">
+        <div class="highlight-overlay"></div>
+        <div class="highlight-info">
+          <h3>Kawah Bromo</h3>
+          <p>Mendaki tangga kawah aktif Gunung Bromo dan rasakan gemuruh kepulan asap belerang dari perut bumi.</p>
+        </div>
+      </div>
+      <div class="highlight-item">
+        <div class="highlight-overlay"></div>
+        <div class="highlight-info">
+          <h3>Pasir Berbisik</h3>
+          <p>Lautan pasir hitam vulkanik luas yang mengeluarkan suara mendesir lirih saat tertiup angin kencang.</p>
+        </div>
+      </div>
+      <div class="highlight-item">
+        <div class="highlight-overlay"></div>
+        <div class="highlight-info">
+          <h3>Bukit Teletubbies</h3>
+          <p>Hamparan bukit savana hijau bergelombang yang menyegarkan mata, kontras dengan lautan pasir di sekitarnya.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<%- include('partials/footer') %>

@@ -1,0 +1,224 @@
+<%- include('../partials/header') %>
+
+<div class="admin-container">
+  <!-- Sidebar Admin -->
+  <aside class="admin-sidebar">
+    <div class="sidebar-header">
+      <i class="fa-solid fa-user-shield"></i>
+      <h3>Admin Panel</h3>
+    </div>
+    <ul class="sidebar-links">
+      <li>
+        <a href="/admin" class="active"><i class="fa-solid fa-table-columns"></i> Transaksi Pemesanan</a>
+      </li>
+      <li>
+        <a href="/admin/packages"><i class="fa-solid fa-folder-open"></i> Kelola Paket Tour</a>
+      </li>
+    </ul>
+  </aside>
+
+  <!-- Konten Utama Admin -->
+  <main class="admin-main">
+    <div class="admin-header-title">
+      <h1>Dashboard Transaksi Pemesanan</h1>
+      <p>Verifikasi bukti pembayaran pelanggan dan kelola status pemesanan tour Bromo.</p>
+    </div>
+
+    <% if (success) { %>
+      <div class="alert alert-success">
+        <i class="fa-solid fa-circle-check"></i>
+        <span><%= success %></span>
+      </div>
+    <% } %>
+
+    <% if (error) { %>
+      <div class="alert alert-danger">
+        <i class="fa-solid fa-triangle-exclamation"></i>
+        <span><%= error %></span>
+      </div>
+    <% } %>
+
+    <!-- Statistik Ringkas -->
+    <div class="stats-row">
+      <% 
+        let totalBookings = bookings.length;
+        let pendingVerif = bookings.filter(b => b.status === 'waiting_verification').length;
+        let approvedCount = bookings.filter(b => b.status === 'approved').length;
+        let totalRevenue = bookings.filter(b => b.status === 'approved').reduce((sum, b) => sum + parseFloat(b.total_price), 0);
+      %>
+      <div class="stat-card">
+        <div class="stat-icon bg-green"><i class="fa-solid fa-calculator"></i></div>
+        <div class="stat-info">
+          <h3><%= totalBookings %></h3>
+          <p>Total Pemesanan</p>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon bg-blue"><i class="fa-solid fa-spinner fa-spin"></i></div>
+        <div class="stat-info">
+          <h3><%= pendingVerif %></h3>
+          <p>Perlu Verifikasi</p>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon bg-yellow"><i class="fa-solid fa-circle-check"></i></div>
+        <div class="stat-info">
+          <h3><%= approvedCount %></h3>
+          <p>Transaksi Sukses</p>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon bg-gold"><i class="fa-solid fa-money-bill-wave"></i></div>
+        <div class="stat-info">
+          <h3>Rp <%= totalRevenue.toLocaleString('id-ID') %></h3>
+          <p>Pendapatan Lunas</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tabel Data Transaksi -->
+    <div class="table-card">
+      <div class="table-responsive">
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Pelanggan</th>
+              <th>Paket Tour</th>
+              <th>Tgl Perjalanan</th>
+              <th>Peserta</th>
+              <th>Total Biaya</th>
+              <th>Bukti Bayar</th>
+              <th>Status</th>
+              <th>Aksi</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% if (bookings && bookings.length > 0) { %>
+              <% bookings.forEach(function(booking) { %>
+                <tr>
+                  <td><strong>#<%= booking.id %></strong></td>
+                  <td>
+                    <div class="user-cell">
+                      <span><%= booking.username %></span><br>
+                      <small class="text-muted"><%= booking.phone %></small>
+                    </div>
+                  </td>
+                  <td><%= booking.package_name %></td>
+                  <td><%= new Date(booking.travel_date).toLocaleDateString('id-ID', {day: 'numeric', month: 'short', year: 'numeric'}) %></td>
+                  <td><%= booking.total_participants %> Orang</td>
+                  <td><strong>Rp <%= parseFloat(booking.total_price).toLocaleString('id-ID') %></strong></td>
+                  <td>
+                    <% if (booking.payment_details) { %>
+                      <button class="btn btn-outline-info btn-xs btn-view-proof" 
+                              data-url="<%= booking.payment_details.payment_proof_url %>"
+                              data-holder="<%= booking.payment_details.account_holder %>"
+                              data-bank="<%= booking.payment_details.bank_name %>"
+                              data-amount="<%= booking.payment_details.amount_paid %>">
+                        <i class="fa-solid fa-eye"></i> Lihat Bukti
+                      </button>
+                    <% } else { %>
+                      <span class="text-muted"><i class="fa-solid fa-hourglass"></i> Belum Upload</span>
+                    <% } %>
+                  </td>
+                  <td>
+                    <% 
+                      let badgeClass = 'badge-pending';
+                      let statusText = 'Pending';
+                      if (booking.status === 'waiting_verification') {
+                        badgeClass = 'badge-info';
+                        statusText = 'Verifikasi';
+                      } else if (booking.status === 'approved') {
+                        badgeClass = 'badge-success';
+                        statusText = 'Approved';
+                      } else if (booking.status === 'rejected') {
+                        badgeClass = 'badge-danger';
+                        statusText = 'Rejected';
+                      } else if (booking.status === 'cancelled') {
+                        badgeClass = 'badge-secondary';
+                        statusText = 'Cancelled';
+                      }
+                    %>
+                    <span class="badge <%= badgeClass %>"><%= statusText %></span>
+                  </td>
+                  <td>
+                    <% if (booking.status === 'waiting_verification') { %>
+                      <div class="admin-actions">
+                        <form action="/admin/booking/approve/<%= booking.id %>" method="POST" style="display:inline;" onsubmit="return confirm('Setujui pembayaran untuk transaksi ini?');">
+                          <button type="submit" class="btn btn-success btn-xs" title="Approve"><i class="fa-solid fa-check"></i> Setuju</button>
+                        </form>
+                        <form action="/admin/booking/reject/<%= booking.id %>" method="POST" style="display:inline;" onsubmit="return confirm('Tolak pembayaran untuk transaksi ini?');">
+                          <button type="submit" class="btn btn-danger btn-xs" title="Reject"><i class="fa-solid fa-xmark"></i> Tolak</button>
+                        </form>
+                      </div>
+                    <% } else { %>
+                      <span class="text-muted">-</span>
+                    <% } %>
+                  </td>
+                </tr>
+              <% }); %>
+            <% } else { %>
+              <tr>
+                <td colspan="9" class="text-center py-4">Belum ada transaksi pemesanan yang tercatat.</td>
+              </tr>
+            <% } %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- Modal Pratinjau Bukti Pembayaran -->
+<div class="modal" id="proofModal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3>Pratinjau Bukti Pembayaran</h3>
+      <span class="modal-close" id="closeProofModal">&times;</span>
+    </div>
+    <div class="modal-body">
+      <div class="proof-details">
+        <p>Pemilik Rekening: <strong id="proofHolder"></strong></p>
+        <p>Bank Asal: <strong id="proofBank"></strong></p>
+        <p>Jumlah Transfer: <strong id="proofAmount"></strong></p>
+      </div>
+      <div class="proof-img-container">
+        <img src="" id="proofImg" alt="Bukti Transfer" style="width:100%; border-radius:8px; border: 1px solid #ddd; margin-top:10px;">
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const proofModal = document.getElementById('proofModal');
+  const closeProofBtn = document.getElementById('closeProofModal');
+  const viewBtns = document.querySelectorAll('.btn-view-proof');
+
+  viewBtns.forEach(btn => {
+    btn.addEventListener('click', function() {
+      const url = this.getAttribute('data-url');
+      const holder = this.getAttribute('data-holder');
+      const bank = this.getAttribute('data-bank');
+      const amount = parseFloat(this.getAttribute('data-amount')).toLocaleString('id-ID');
+
+      document.getElementById('proofHolder').textContent = holder;
+      document.getElementById('proofBank').textContent = bank;
+      document.getElementById('proofAmount').textContent = 'Rp ' + amount;
+      document.getElementById('proofImg').src = url;
+
+      proofModal.style.display = 'block';
+    });
+  });
+
+  closeProofBtn.addEventListener('click', function() {
+    proofModal.style.display = 'none';
+  });
+
+  window.addEventListener('click', function(e) {
+    if (e.target == proofModal) {
+      proofModal.style.display = 'none';
+    }
+  });
+</script>
+
+<%- include('../partials/footer') %>

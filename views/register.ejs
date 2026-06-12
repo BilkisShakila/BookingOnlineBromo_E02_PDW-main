@@ -1,0 +1,67 @@
+<%- include('partials/header') %>
+
+<div class="auth-wrapper">
+  <div class="auth-card">
+    <div class="auth-header">
+      <i class="fa-solid fa-user-plus"></i>
+      <h2>Pendaftaran Akun</h2>
+      <p>Buat akun baru Anda untuk memesan tiket wisata Bromo</p>
+    </div>
+
+    <% if (error) { %>
+      <div class="alert alert-danger">
+        <i class="fa-solid fa-triangle-exclamation"></i>
+        <span><%= error %></span>
+      </div>
+    <% } %>
+
+    <% if (success) { %>
+      <div class="alert alert-success">
+        <i class="fa-solid fa-circle-check"></i>
+        <span><%= success %></span>
+      </div>
+    <% } %>
+
+    <form action="/auth/register" method="POST" class="auth-form">
+      <div class="form-group">
+        <label for="username">Username</label>
+        <div class="input-icon-wrapper">
+          <i class="fa-solid fa-user"></i>
+          <input type="text" id="username" name="username" placeholder="Pilih username unik" required>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="email">Alamat Email</label>
+        <div class="input-icon-wrapper">
+          <i class="fa-solid fa-envelope"></i>
+          <input type="email" id="email" name="email" placeholder="contoh@domain.com" required>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="phone">Nomor Telepon / WhatsApp</label>
+        <div class="input-icon-wrapper">
+          <i class="fa-solid fa-phone"></i>
+          <input type="text" id="phone" name="phone" placeholder="Contoh: 0812XXXXXXXX" required>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="password">Password</label>
+        <div class="input-icon-wrapper">
+          <i class="fa-solid fa-lock"></i>
+          <input type="password" id="password" name="password" placeholder="Minimal 6 karakter" required>
+        </div>
+      </div>
+
+      <button type="submit" class="btn btn-primary btn-block btn-lg">Daftar Akun Baru</button>
+    </form>
+
+    <div class="auth-footer">
+      <p>Sudah memiliki akun? <a href="/auth/login">Masuk di sini</a></p>
+    </div>
+  </div>
+</div>
+
+<%- include('partials/footer') %>

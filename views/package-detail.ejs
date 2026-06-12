@@ -1,0 +1,105 @@
+<%- include('partials/header') %>
+
+<div class="detail-container">
+  <div class="detail-back">
+    <a href="/"><i class="fa-solid fa-arrow-left"></i> Kembali ke Katalog Paket</a>
+  </div>
+
+  <div class="detail-grid">
+    <!-- Kolom Kiri: Informasi Paket -->
+    <div class="detail-main">
+      <div class="detail-image-box" style="background-image: url('<%= package.image_url %>'); background-size: cover; background-position: center;">
+        <img src="<%= package.image_url %>" alt="<%= package.name %>" class="detail-image">
+        <h1 class="detail-title"><%= package.name %></h1>
+      </div>
+
+      <div class="detail-card">
+        <h2>Deskripsi Paket Tour</h2>
+        <div class="detail-desc">
+          <p><%= package.description %></p>
+        </div>
+      </div>
+
+      <div class="detail-card">
+        <h2>Fasilitas Paket</h2>
+        <div class="facilities-split">
+          <div class="facility-list included">
+            <h3><i class="fa-solid fa-circle-check"></i> Sudah Termasuk (Included)</h3>
+            <ul>
+              <li><i class="fa-solid fa-check"></i> Transportasi Jeep 4x4 (Private/Open Trip)</li>
+              <li><i class="fa-solid fa-check"></i> Driver berpengalaman sekaligus Tour Guide</li>
+              <li><i class="fa-solid fa-check"></i> Tiket masuk TNBTS resmi</li>
+              <li><i class="fa-solid fa-check"></i> Bahan bakar minyak (BBM) & Parkir Jeep</li>
+              <li><i class="fa-solid fa-check"></i> Air mineral & Masker debu</li>
+            </ul>
+          </div>
+          <div class="facility-list excluded">
+            <h3><i class="fa-solid fa-circle-xmark"></i> Tidak Termasuk (Excluded)</h3>
+            <ul>
+              <li><i class="fa-solid fa-xmark"></i> Sewa Kuda menuju tangga kawah Bromo</li>
+              <li><i class="fa-solid fa-xmark"></i> Pengeluaran pribadi & Dokumentasi tambahan</li>
+              <li><i class="fa-solid fa-xmark"></i> Makan & Minum di luar paket</li>
+              <li><i class="fa-solid fa-xmark"></i> Tip Driver (seikhlasnya)</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Kolom Kanan: Pemesanan Cepat -->
+    <div class="detail-sidebar">
+      <div class="sticky-sidebar">
+        <div class="sidebar-card">
+          <span class="sidebar-badge">Harga Terbaik</span>
+          <div class="sidebar-price">
+            <span class="price-val">Rp <%= parseFloat(package.price_per_person).toLocaleString('id-ID') %></span>
+            <span class="price-unit">/ orang</span>
+          </div>
+          
+          <hr class="sidebar-divider">
+          
+          <div class="booking-features">
+            <div class="b-feat"><i class="fa-solid fa-calendar"></i> Pemesanan Fleksibel</div>
+            <div class="b-feat"><i class="fa-solid fa-clock"></i> Konfirmasi Cepat</div>
+            <div class="b-feat"><i class="fa-solid fa-credit-card"></i> Pembayaran Transfer Bank</div>
+          </div>
+
+          <div class="sidebar-calculator">
+            <label for="calcParticipants">Simulasi Total Biaya</label>
+            <div class="calc-input">
+              <input type="number" id="calcParticipants" value="1" min="1" max="100">
+              <span>Peserta</span>
+            </div>
+            <div class="calc-result">
+              <span>Total Harga:</span>
+              <strong id="calcTotal">Rp <%= parseFloat(package.price_per_person).toLocaleString('id-ID') %></strong>
+            </div>
+          </div>
+
+          <a href="/booking/new?packageId=<%= package.id %>" class="btn btn-primary btn-block btn-lg"><i class="fa-solid fa-cart-shopping"></i> Pesan Paket Sekarang</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Script untuk kalkulator simulasi harga cepat
+  const pricePerPerson = <%= package.price_per_person %>;
+  const input = document.getElementById('calcParticipants');
+  const result = document.getElementById('calcTotal');
+
+  if (input && result) {
+    input.addEventListener('input', function() {
+      let count = parseInt(this.value);
+      if (isNaN(count) || count < 1) {
+        count = 1;
+        this.value = 1;
+      }
+      const total = count * pricePerPerson;
+      result.textContent = 'Rp ' + total.toLocaleString('id-ID');
+    });
+  }
+</script>
+
+<%- include('partials/footer') %>

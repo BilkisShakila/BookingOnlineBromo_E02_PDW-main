@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Booking Online Bromo - Jelajahi Keindahan Gunung Bromo</title>
+  <!-- Google Fonts: Inter & Montserrat -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Montserrat:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <!-- FontAwesome for Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+  <!-- Navigation Bar -->
+  <nav class="navbar">
+    <div class="nav-container">
+      <a href="/" class="nav-logo">
+        <i class="fa-solid fa-mountain-sun"></i>
+        <span>BROMO<span>ONLINE</span></span>
+      </a>
+      
+      <button class="nav-toggle" id="navToggle" aria-label="Toggle menu">
+        <i class="fa-solid fa-bars"></i>
+      </button>
+
+      <div class="nav-menu" id="navMenu">
+        <a href="/" class="nav-item"><i class="fa-solid fa-compass"></i> Paket Wisata</a>
+        
+        <% if (user) { %>
+          <% if (user.role === 'admin') { %>
+            <a href="/admin" class="nav-item"><i class="fa-solid fa-chart-line"></i> Dashboard Admin</a>
+            <a href="/admin/packages" class="nav-item"><i class="fa-solid fa-boxes-stacked"></i> Kelola Paket</a>
+          <% } else { %>
+            <a href="/booking/history" class="nav-item"><i class="fa-solid fa-receipt"></i> Pesanan Saya</a>
+          <% } %>
+          <div class="nav-user-info">
+            <span class="user-welcome"><i class="fa-solid fa-user-circle"></i> <%= user.username %> (<%= user.role %>)</span>
+            <a href="/auth/logout" class="btn btn-outline btn-logout"><i class="fa-solid fa-sign-out-alt"></i> Keluar</a>
+          </div>
+        <% } else { %>
+          <div class="nav-auth-buttons">
+            <a href="/auth/login" class="btn btn-outline"><i class="fa-solid fa-sign-in-alt"></i> Masuk</a>
+            <a href="/auth/register" class="btn btn-primary"><i class="fa-solid fa-user-plus"></i> Daftar</a>
+          </div>
+        <% } %>
+      </div>
+    </div>
+  </nav>
+
+  <main class="main-content">

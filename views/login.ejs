@@ -1,0 +1,51 @@
+<%- include('partials/header') %>
+
+<div class="auth-wrapper">
+  <div class="auth-card">
+    <div class="auth-header">
+      <i class="fa-solid fa-mountain-sun"></i>
+      <h2>Masuk Akun</h2>
+      <p>Silakan masuk untuk melanjutkan pemesanan tiket Bromo</p>
+    </div>
+
+    <% if (error) { %>
+      <div class="alert alert-danger">
+        <i class="fa-solid fa-triangle-exclamation"></i>
+        <span><%= error %></span>
+      </div>
+    <% } %>
+
+    <% if (success) { %>
+      <div class="alert alert-success">
+        <i class="fa-solid fa-circle-check"></i>
+        <span><%= success %></span>
+      </div>
+    <% } %>
+
+    <form action="/auth/login" method="POST" class="auth-form">
+      <div class="form-group">
+        <label for="username">Username</label>
+        <div class="input-icon-wrapper">
+          <i class="fa-solid fa-user"></i>
+          <input type="text" id="username" name="username" placeholder="Masukkan username Anda" required>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="password">Password</label>
+        <div class="input-icon-wrapper">
+          <i class="fa-solid fa-lock"></i>
+          <input type="password" id="password" name="password" placeholder="Masukkan password Anda" required>
+        </div>
+      </div>
+
+      <button type="submit" class="btn btn-primary btn-block btn-lg">Masuk Sekarang</button>
+    </form>
+
+    <div class="auth-footer">
+      <p>Belum punya akun Bromo Online? <a href="/auth/register">Daftar di sini</a></p>
+    </div>
+  </div>
+</div>
+
+<%- include('partials/footer') %>

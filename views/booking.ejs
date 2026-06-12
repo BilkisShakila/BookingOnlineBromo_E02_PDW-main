@@ -1,0 +1,98 @@
+<%- include('partials/header') %>
+
+<div class="booking-wrapper">
+  <div class="booking-card">
+    <div class="booking-header">
+      <i class="fa-solid fa-file-invoice-dollar"></i>
+      <h2>Formulir Pemesanan Tiket</h2>
+      <p>Isi data perjalanan Anda ke Bromo dengan lengkap dan benar</p>
+    </div>
+
+    <form action="/booking/new" method="POST" class="booking-form">
+      <input type="hidden" name="package_id" value="<%= package.id %>">
+      
+      <div class="form-group">
+        <label>Paket Wisata Pilihan</label>
+        <div class="read-only-field">
+          <i class="fa-solid fa-mountain-sun"></i>
+          <span><%= package.name %></span>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Tarif per Orang</label>
+        <div class="read-only-field">
+          <i class="fa-solid fa-tag"></i>
+          <span>Rp <%= parseFloat(package.price_per_person).toLocaleString('id-ID') %></span>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="travel_date">Tanggal Keberangkatan</label>
+        <div class="input-icon-wrapper">
+          <i class="fa-solid fa-calendar-days"></i>
+          <input type="date" id="travel_date" name="travel_date" required>
+        </div>
+        <small class="form-help">Pilihlah tanggal keberangkatan minimal H+1 dari hari ini.</small>
+      </div>
+
+      <div class="form-group">
+        <label for="total_participants">Jumlah Peserta Tour</label>
+        <div class="input-icon-wrapper">
+          <i class="fa-solid fa-users"></i>
+          <input type="number" id="total_participants" name="total_participants" min="1" max="100" value="1" required>
+        </div>
+      </div>
+
+      <!-- Live Calculation Card -->
+      <div class="invoice-summary">
+        <h3>Rincian Pembayaran</h3>
+        <div class="invoice-row">
+          <span>Tarif Dasar</span>
+          <span>Rp <%= parseFloat(package.price_per_person).toLocaleString('id-ID') %> x <strong id="invCount">1</strong> orang</span>
+        </div>
+        <hr>
+        <div class="invoice-row total">
+          <span>Total Tagihan</span>
+          <strong id="invTotal">Rp <%= parseFloat(package.price_per_person).toLocaleString('id-ID') %></strong>
+        </div>
+      </div>
+
+      <div class="booking-actions">
+        <a href="/packages/<%= package.id %>" class="btn btn-outline-danger"><i class="fa-solid fa-xmark"></i> Batal</a>
+        <button type="submit" class="btn btn-primary"><i class="fa-solid fa-circle-check"></i> Lanjutkan Pemesanan</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  // Set minimal tanggal keberangkatan H+1
+  const today = new Date();
+  today.setDate(today.getDate() + 1);
+  const yyyy = today.getFullYear();
+  const mm = String(today.getMonth() + 1).padStart(2, '0');
+  const dd = String(today.getDate()).padStart(2, '0');
+  const minDate = `${yyyy}-${mm}-${dd}`;
+  document.getElementById('travel_date').setAttribute('min', minDate);
+  document.getElementById('travel_date').value = minDate;
+
+  // Live Invoice Calculation
+  const price = <%= package.price_per_person %>;
+  const countInput = document.getElementById('total_participants');
+  const countLabel = document.getElementById('invCount');
+  const totalLabel = document.getElementById('invTotal');
+
+  countInput.addEventListener('input', function() {
+    let count = parseInt(this.value);
+    if (isNaN(count) || count < 1) {
+      count = 1;
+      this.value = 1;
+    }
+    countLabel.textContent = count;
+    const total = count * price;
+    totalLabel.textContent = 'Rp ' + total.toLocaleString('id-ID');
+  });
+</script>
+
+<%- include('partials/footer') %>

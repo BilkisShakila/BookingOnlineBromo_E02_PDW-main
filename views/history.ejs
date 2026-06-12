@@ -1,0 +1,195 @@
+<%- include('partials/header') %>
+
+<div class="history-container">
+  <div class="history-header">
+    <h1><i class="fa-solid fa-receipt"></i> Riwayat Pemesanan Anda</h1>
+    <p>Pantau status transaksi pemesanan paket wisata Bromo Anda di sini</p>
+  </div>
+
+  <% if (success) { %>
+    <div class="alert alert-success">
+      <i class="fa-solid fa-circle-check"></i>
+      <span><%= success %></span>
+    </div>
+  <% } %>
+
+  <% if (error) { %>
+    <div class="alert alert-danger">
+      <i class="fa-solid fa-triangle-exclamation"></i>
+      <span><%= error %></span>
+    </div>
+  <% } %>
+
+  <div class="bookings-list">
+    <% if (bookings && bookings.length > 0) { %>
+      <% bookings.forEach(function(booking) { %>
+        <div class="booking-item-card">
+          <div class="b-card-header">
+            <div>
+              <span class="b-id">Booking ID: #<%= booking.id %></span>
+              <span class="b-date">Dipesan pada: <%= new Date(booking.booking_date).toLocaleDateString('id-ID', {day: 'numeric', month: 'long', year: 'numeric'}) %></span>
+            </div>
+            
+            <% 
+              let badgeClass = 'badge-pending';
+              let statusText = 'Menunggu Pembayaran';
+              if (booking.status === 'waiting_verification') {
+                badgeClass = 'badge-info';
+                statusText = 'Menunggu Verifikasi';
+              } else if (booking.status === 'approved') {
+                badgeClass = 'badge-success';
+                statusText = 'Disetujui / Selesai';
+              } else if (booking.status === 'rejected') {
+                badgeClass = 'badge-danger';
+                statusText = 'Ditolak';
+              } else if (booking.status === 'cancelled') {
+                badgeClass = 'badge-secondary';
+                statusText = 'Dibatalkan';
+              }
+            %>
+            <span class="badge <%= badgeClass %>"><%= statusText %></span>
+          </div>
+
+          <div class="b-card-body">
+            <div class="b-img-col">
+              <img src="<%= booking.package_image %>" alt="<%= booking.package_name %>" class="ticket-pkg-img" onerror="this.style.display='none';">
+            </div>
+            <div class="b-info-col">
+              <h4>Paket Wisata</h4>
+              <p class="pkg-title"><%= booking.package_name %></p>
+            </div>
+            <div class="b-info-col">
+              <h4>Tanggal Perjalanan</h4>
+              <p><i class="fa-solid fa-calendar-day"></i> <%= new Date(booking.travel_date).toLocaleDateString('id-ID', {day: 'numeric', month: 'long', year: 'numeric'}) %></p>
+            </div>
+            <div class="b-info-col">
+              <h4>Peserta</h4>
+              <p><i class="fa-solid fa-users"></i> <%= booking.total_participants %> Orang</p>
+            </div>
+            <div class="b-info-col">
+              <h4>Total Harga</h4>
+              <p class="b-total-price">Rp <%= parseFloat(booking.total_price).toLocaleString('id-ID') %></p>
+            </div>
+          </div>
+
+          <div class="b-card-footer">
+            <% if (booking.status === 'pending') { %>
+              <div class="b-actions-row">
+                <form action="/booking/cancel/<%= booking.id %>" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin membatalkan pemesanan ini?');">
+                  <button type="submit" class="btn btn-outline-danger btn-sm"><i class="fa-solid fa-trash"></i> Batalkan</button>
+                </form>
+                <button class="btn btn-primary btn-sm btn-pay-now" 
+                        data-id="<%= booking.id %>" 
+                        data-package="<%= booking.package_name %>"
+                        data-price="<%= booking.total_price %>">
+                  <i class="fa-solid fa-file-invoice-dollar"></i> Bayar Sekarang
+                </button>
+              </div>
+            <% } else if (booking.status === 'waiting_verification') { %>
+              <p class="b-footer-note"><i class="fa-solid fa-spinner fa-spin"></i> Bukti transfer sudah diunggah. Kami sedang memverifikasi pembayaran Anda.</p>
+            <% } else if (booking.status === 'approved') { %>
+              <div class="b-actions-row">
+                <p class="b-footer-success"><i class="fa-solid fa-circle-check"></i> Pembayaran Lunas. Selamat Berlibur!</p>
+                <button onclick="alert('E-Ticket akan otomatis terunduh dalam format PDF. (Fitur Simulasi)')" class="btn btn-success btn-sm"><i class="fa-solid fa-download"></i> Unduh E-Ticket</button>
+              </div>
+            <% } else if (booking.status === 'rejected') { %>
+              <p class="b-footer-danger"><i class="fa-solid fa-circle-xmark"></i> Pembayaran Anda Ditolak. Harap hubungi Admin atau periksa kembali bukti transfer Anda.</p>
+            <% } else if (booking.status === 'cancelled') { %>
+              <p class="b-footer-note"><i class="fa-solid fa-ban"></i> Pemesanan dibatalkan.</p>
+            <% } %>
+          </div>
+        </div>
+      <% }); %>
+    <% } else { %>
+      <div class="no-bookings">
+        <i class="fa-solid fa-folder-open"></i>
+        <p>Anda belum memiliki riwayat pemesanan.</p>
+        <a href="/" class="btn btn-primary"><i class="fa-solid fa-compass"></i> Pesan Paket Sekarang</a>
+      </div>
+    <% } %>
+  </div>
+</div>
+
+<!-- Modal Form Pembayaran (Pure CSS Toggle & JS) -->
+<div class="modal" id="paymentModal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3><i class="fa-solid fa-wallet"></i> Konfirmasi Pembayaran</h3>
+      <span class="modal-close" id="closeModal">&times;</span>
+    </div>
+    
+    <div class="bank-instructions">
+      <h4><i class="fa-solid fa-bank"></i> Rekening Pembayaran Resmi Bromo Online:</h4>
+      <p>Silakan transfer total tagihan tepat sesuai nominal pemesanan Anda ke rekening berikut:</p>
+      <div class="bank-card">
+        <strong>BANK MANDIRI (KCP Probolinggo)</strong><br>
+        No. Rekening: <strong>143-00-987654-21</strong><br>
+        Atas Nama: <strong>PT BROMO INDAH ADVENTURE</strong>
+      </div>
+    </div>
+
+    <form action="/booking/payment" method="POST" enctype="multipart/form-data" class="payment-form">
+      <input type="hidden" id="modal_booking_id" name="booking_id">
+      
+      <div class="form-group">
+        <label>Detail Paket</label>
+        <div id="modal_package_name" class="read-only-modal-field">Paket Wisata</div>
+      </div>
+
+      <div class="form-group">
+        <label for="amount_paid">Jumlah Transfer (Rp)</label>
+        <input type="number" id="amount_paid" name="amount_paid" readonly required>
+      </div>
+
+      <div class="form-group">
+        <label for="bank_name">Nama Bank Pengirim Anda</label>
+        <input type="text" id="bank_name" name="bank_name" placeholder="Contoh: BCA, BNI, BRI, Mandiri" required>
+      </div>
+
+      <div class="form-group">
+        <label for="account_holder">Nama Pemilik Rekening Pengirim</label>
+        <input type="text" id="account_holder" name="account_holder" placeholder="Nama sesuai buku tabungan" required>
+      </div>
+
+      <div class="form-group">
+        <label for="payment_proof">Unggah Bukti Transfer (Gambar)</label>
+        <input type="file" id="payment_proof" name="payment_proof" accept="image/*" required>
+        <small class="form-help text-danger">Format diperbolehkan: JPG, JPEG, PNG. Maksimal 5MB.</small>
+      </div>
+
+      <button type="submit" class="btn btn-primary btn-block btn-lg"><i class="fa-solid fa-paper-plane"></i> Kirim Bukti Transfer</button>
+    </form>
+  </div>
+</div>
+
+<script>
+  // Script Modal Pembayaran
+  const modal = document.getElementById('paymentModal');
+  const closeModalBtn = document.getElementById('closeModal');
+  const payButtons = document.querySelectorAll('.btn-pay-now');
+
+  payButtons.forEach(button => {
+    button.addEventListener('click', function() {
+      const bookingId = this.getAttribute('data-id');
+      const packageName = this.getAttribute('data-package');
+      const totalPrice = this.getAttribute('data-price');
+
+      document.getElementById('modal_booking_id').value = bookingId;
+      document.getElementById('modal_package_name').textContent = packageName + ` (ID: #${bookingId})`;
+      document.getElementById('amount_paid').value = totalPrice;
+
+      modal.style.display = 'block';
+    });
+  });
+
+  closeModalBtn.addEventListener('click', function() {
+    modal.style.display = 'none';
+  });
+
+  window.addEventListener('click', function(event) {
+    if (event.target == modal) {
+      modal.style.display = 'none';
+    }
+  });
+</script>
+<%- include('partials/footer') %>
